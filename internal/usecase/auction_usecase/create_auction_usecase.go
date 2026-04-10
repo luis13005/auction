@@ -2,10 +2,13 @@ package auction_usecase
 
 import (
 	"context"
+	"fmt"
+	"fullcycle-auction_go/configuration/logger"
 	"fullcycle-auction_go/internal/entity/auction_entity"
 	"fullcycle-auction_go/internal/entity/bid_entity"
 	"fullcycle-auction_go/internal/internal_error"
 	"fullcycle-auction_go/internal/usecase/bid_usecase"
+	"os"
 	"time"
 )
 
@@ -40,6 +43,19 @@ func NewAuctionUseCase(
 	}
 }
 
+func (au *AuctionUseCase) triggerCreateRoutine(auction *auction_entity.Auction) {
+	go func() {
+		fmt.Println(getAuctionDuration())
+		time.Sleep(getAuctionDuration())
+
+		ctx := context.Background()
+
+		if err := au.auctionRepositoryInterface.SetAuctionTimeOut(ctx, auction); err != nil {
+			logger.Error("Error trying to expire auction", err)
+		}
+	}()
+}
+
 type AuctionUseCaseInterface interface {
 	CreateAuction(
 		ctx context.Context,
@@ -64,6 +80,7 @@ type AuctionStatus int64
 type AuctionUseCase struct {
 	auctionRepositoryInterface auction_entity.AuctionRepositoryInterface
 	bidRepositoryInterface     bid_entity.BidEntityRepository
+	auctionChannel             chan auction_entity.Auction
 }
 
 func (au *AuctionUseCase) CreateAuction(
@@ -83,5 +100,14 @@ func (au *AuctionUseCase) CreateAuction(
 		return err
 	}
 
+	au.triggerCreateRoutine(auction)
 	return nil
+}
+
+func getAuctionDuration() time.Duration {
+	duration, err := time.ParseDuration(os.Getenv("AUCTION_DURATION"))
+	if err != nil {
+		return 5 * time.Minute // fallback padrão
+	}
+	return duration
 }
