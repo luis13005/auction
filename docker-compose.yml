@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -13,6 +11,22 @@ services:
     networks:
       - localNetwork
 
+  test:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    env_file:
+      - cmd/auction/.env
+    environment:
+      - AUCTION_DURATION=2s
+    entrypoint: ["go"]
+    command: ["test", "-v", "-count=1", "./internal/usecase/auction_usecase/..."]
+    networks:
+      - localNetwork
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
   mongodb:
     image: mongo:latest
     container_name: mongodb
@@ -24,6 +38,11 @@ services:
       - mongo-data:/data/db
     networks:
       - localNetwork
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   mongo-data:

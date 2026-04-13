@@ -2,7 +2,6 @@ package auction_usecase
 
 import (
 	"context"
-	"fmt"
 	"fullcycle-auction_go/configuration/logger"
 	"fullcycle-auction_go/internal/entity/auction_entity"
 	"fullcycle-auction_go/internal/entity/bid_entity"
@@ -45,8 +44,7 @@ func NewAuctionUseCase(
 
 func (au *AuctionUseCase) triggerCreateRoutine(auction *auction_entity.Auction) {
 	go func() {
-		fmt.Println(getAuctionDuration())
-		time.Sleep(getAuctionDuration())
+		time.Sleep(GetAuctionDuration())
 
 		ctx := context.Background()
 
@@ -104,10 +102,10 @@ func (au *AuctionUseCase) CreateAuction(
 	return nil
 }
 
-func getAuctionDuration() time.Duration {
+func GetAuctionDuration() time.Duration {
 	duration, err := time.ParseDuration(os.Getenv("AUCTION_DURATION"))
 	if err != nil {
-		return 5 * time.Minute // fallback padrão
+		return 5 * time.Minute
 	}
 	return duration
 }
